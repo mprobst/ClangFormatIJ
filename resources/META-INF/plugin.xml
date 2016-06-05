@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>io.probst.idea.clangformat</id>
   <name>ClangFormatIJ</name>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
   <vendor email="martin@probst.io" url="http://www.probst.io">Martin Probst</vendor>
 
   <description><![CDATA[
@@ -16,6 +16,8 @@
 
   <change-notes><![CDATA[
     <ul>
+      <li><b>1.0.2</b> - Use the full file path, so that clang-format picks up the correct
+        configuration file.</li>
       <li><b>1.0.1</b> - Fix description.</li>
       <li><b>1.0</b> - Initial version.</li>
     </ul>
@@ -23,13 +25,8 @@
   </change-notes>
 
   <idea-version since-build="141.0"/>
-
   <!-- enabled in all products -->
   <depends>com.intellij.modules.lang</depends>
-
-  <extensions defaultExtensionNs="com.intellij">
-    <!-- Add your extensions here -->
-  </extensions>
 
   <actions>
     <action id="ClangFormat.ClangFormat" class="io.probst.idea.clangformat.ClangFormatAction"

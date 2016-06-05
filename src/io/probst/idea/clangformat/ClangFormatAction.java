@@ -11,8 +11,6 @@ import com.intellij.openapi.editor.Caret;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.Messages;
-import com.intellij.testFramework.exceptionCases.IllegalArgumentExceptionCase;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -53,9 +51,10 @@ public class ClangFormatAction extends AnAction {
   public void actionPerformed(AnActionEvent actionEvent) {
     Project project = actionEvent.getData(CommonDataKeys.PROJECT);
     Editor editor = actionEvent.getData(CommonDataKeys.EDITOR);
+    if (editor == null) return;  // can happen during startup.
     Document document = editor.getDocument();
 
-    String fileName = actionEvent.getData(CommonDataKeys.VIRTUAL_FILE).getName();
+    String filePath = actionEvent.getData(CommonDataKeys.VIRTUAL_FILE).getPath();
     Caret caret = editor.getCaretModel().getPrimaryCaret();
     int selectionStart = editor.getSelectionModel().getSelectionStart();
     int selectionLength = editor.getSelectionModel().getSelectionEnd() - selectionStart;
@@ -65,14 +64,13 @@ public class ClangFormatAction extends AnAction {
       formatter = new ProcessBuilder()
           .command("clang-format",
               "-output-replacements-xml",
-              "-assume-filename", fileName,
-              "-cursor", String.valueOf(caret.getOffset()),
-              "-offset", String.valueOf(selectionStart),
-              "-length", String.valueOf(selectionLength))
-          .redirectErrorStream(true)
+              "-assume-filename=" + filePath,
+              "-cursor=" + caret.getOffset(),
+              "-offset=" + selectionStart,
+              "-length=" + selectionLength)
           .start();
     } catch (IOException e) {
-      showError(project, "running clang-format failed - not installed?<br/>" +
+      showError(project, "running clang-format failed - not installed or not in PATH?<br/>" +
           "Try running 'clang-format' in a shell.<br/>" + e.getMessage());
       return;
     }
