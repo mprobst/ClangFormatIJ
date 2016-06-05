@@ -1,0 +1,45 @@
+<idea-plugin version="2">
+  <id>io.probst.idea.clangformat</id>
+  <name>ClangFormatIJ</name>
+  <version>1.0</version>
+  <vendor email="martin@probst.io" url="http://www.probst.io">Martin Probst</vendor>
+
+  <description><![CDATA[
+    <p>Runs <pre>clang-format</pre> on the statement or selection.</p>
+    <p>clang-format is a versatile and beautiful formatter for C++, proto, Java, JavaScript,
+      and TypeScript.</p>
+    <p>This plugin does not contain <pre>clang-format</pre> itself, you must install it separately.
+      <pre>clang-format</pre> is available in e.g. npm, or homebrew for Mac. This plugin also
+      has no configuration.</p>
+    ]]>
+  </description>
+
+  <change-notes><![CDATA[
+    <ul>
+      <li><b>1.0</b> - Initial version.</li>
+    </ul>
+    ]]>
+  </change-notes>
+
+  <idea-version since-build="141.0"/>
+
+  <!-- enabled in all products -->
+  <depends>com.intellij.modules.lang</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <!-- Add your extensions here -->
+  </extensions>
+
+  <actions>
+    <action id="ClangFormat.ClangFormat" class="io.probst.idea.clangformat.ClangFormatAction"
+            text="clang-format"
+            description="Runs clang-format on this buffer">
+      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+
+      <keyboard-shortcut keymap="Mac OS X" first-keystroke="control K"/>
+      <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta K"/>
+      <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta K"/>
+    </action>
+  </actions>
+
+</idea-plugin>
