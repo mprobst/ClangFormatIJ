@@ -1,21 +1,22 @@
 <idea-plugin version="2">
   <id>io.probst.idea.clangformat</id>
   <name>ClangFormatIJ</name>
-  <version>1.0</version>
+  <version>1.0.1</version>
   <vendor email="martin@probst.io" url="http://www.probst.io">Martin Probst</vendor>
 
   <description><![CDATA[
-    <p>Runs <pre>clang-format</pre> on the statement or selection.</p>
-    <p>clang-format is a versatile and beautiful formatter for C++, proto, Java, JavaScript,
-      and TypeScript.</p>
-    <p>This plugin does not contain <pre>clang-format</pre> itself, you must install it separately.
-      <pre>clang-format</pre> is available in e.g. npm, or homebrew for Mac. This plugin also
-      has no configuration.</p>
+    <p>Runs <code>clang-format</code> on the statement or selection.</p>
+    <p><code>clang-format</code> is a versatile and beautiful formatter for C++, proto, Java,
+      JavaScript, and TypeScript.</p>
+    <p>This plugin does not contain <code>clang-format</code> itself, you must install it separately.
+      <code>clang-format</code> is available in e.g. npm, or homebrew for Mac. This plugin also
+      has no configuration, please use the regular <code>.clang-format</code> mechanism.</p>
     ]]>
   </description>
 
   <change-notes><![CDATA[
     <ul>
+      <li><b>1.0.1</b> - Fix description.</li>
       <li><b>1.0</b> - Initial version.</li>
     </ul>
     ]]>
