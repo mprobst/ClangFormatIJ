@@ -45,4 +45,8 @@
     </action>
   </actions>
 
+  <extensions defaultExtensionNs="com.intellij">
+    <applicationConfigurable groupId="tools" instance="io.probst.idea.clangformat.ClangFormatConfigurable"/>
+  </extensions>
+
 </idea-plugin>

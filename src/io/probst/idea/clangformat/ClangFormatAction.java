@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -67,27 +68,19 @@ public class ClangFormatAction extends AnAction {
 
     Process formatter;
     try {
-      // Comment in to debug mystifyingly missing binaries etc.
+      // Comment in to debug mystifying missing binaries etc.
       //      System.out.println("PATH is " + readInput(new ProcessBuilder()
       //          .command("sh", "-c", "echo $PATH")
       //          .redirectErrorStream(true)
       //          .start()
       //          .getInputStream()));
-
-      formatter = new ProcessBuilder()
-          .command(
-              "clang-format",
-              "-output-replacements-xml",
-              "-assume-filename=" + filePath,
-              "-cursor=" + cursor,
-              "-offset=" + selectionStart,
-              "-length=" + selectionLength)
-          .start();
-    } catch (IOException e) {
+      formatter = getCommand(filePath, cursor, selectionStart, selectionLength).start();
+    } catch (IOException|InterruptedException|ExecutionException e) {
+      e.printStackTrace();
       showError(project, "running clang-format failed - not installed?<br/>"
-              + "Try running 'clang-format' in a shell.<br/>" + e.getMessage() + "<br>"
-              + "<br>On Mac OS X, make sure to set your PATH variables in .profile, "
-              + "not in e.g. .bash_profile.");
+          + "Try running 'clang-format' in a shell.<br/>" + e.getMessage() + "<br>"
+          + "<br>On Mac OS X, make sure to set your PATH variables in .profile, "
+          + "not in e.g. .bash_profile.");
       return;
     }
 
@@ -136,6 +129,50 @@ public class ClangFormatAction extends AnAction {
     });
   }
 
+  static Future<String> PATH_FUTURE = null;
+
+  /**
+   * Mac OS X does not set a usable PATH for UI applications. This code spawns a login shell once,
+   * has it echo the actual PATH, and stores that way for future use (running a shell on each call
+   * is much too expensive).
+   */
+  static synchronized Future<String> getLoginShellPath() {
+    if (PATH_FUTURE == null) {
+      PATH_FUTURE = EXECUTOR.submit(new Callable<String>() {
+        @Override
+        public String call() throws Exception {
+          return readInput(new ProcessBuilder()
+              .command("bash", "-l", "-r", "-c", "echo $PATH")
+              .redirectErrorStream(true)
+              .start()
+              .getInputStream());
+        }
+      });
+    }
+    return PATH_FUTURE;
+  }
+
+  private ProcessBuilder getCommand(String filePath, int cursor, int selectionStart, int
+      selectionLength) throws ExecutionException, InterruptedException {
+    Settings settings = Settings.get();
+
+    ProcessBuilder command = new ProcessBuilder()
+        .command(
+            settings.clangFormatBinary,
+            "-output-replacements-xml",
+            "-assume-filename=" + filePath,
+            "-cursor=" + cursor,
+            "-offset=" + selectionStart,
+            "-length=" + selectionLength);
+
+    if (!settings.path.trim().isEmpty()) {
+      command.environment().put("PATH", settings.path);
+    } else if (System.getProperty("os.name").contains("Mac OS X")) {
+      command.environment().put("PATH", getLoginShellPath().get());
+    }
+    return command;
+  }
+
   private void writeFileContents(Document document, OutputStream outputStream) {
     try (OutputStreamWriter out = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
       CharSequence contents = document.getImmutableCharSequence();
@@ -145,7 +182,7 @@ public class ClangFormatAction extends AnAction {
     }
   }
 
-  private String readInput(InputStream err) throws IOException {
+  private static String readInput(InputStream err) throws IOException {
     try (InputStreamReader errorStream = new InputStreamReader(err, StandardCharsets.UTF_8)) {
       StringBuilder sb = new StringBuilder();
       char[] buf = new char[4096];
