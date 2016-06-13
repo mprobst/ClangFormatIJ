@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>io.probst.idea.clangformat</id>
   <name>ClangFormatIJ</name>
-  <version>1.0.5</version>
+  <version>1.0.6</version>
   <vendor email="martin@probst.io" url="http://www.probst.io">Martin Probst</vendor>
 
   <description><![CDATA[
@@ -19,6 +19,7 @@
 
   <change-notes><![CDATA[
     <ul>
+      <li><b>1.0.6</b> - Search the PATH for the binary.</li>
       <li><b>1.0.5</b> - Use a login shell to find PATH on Mac OS, add a config panel.</li>
       <li><b>1.0.4</b> - Drop crazy PATH logic, recommend $HOME/.profile to users.</li>
       <li><b>1.0.3</b> - Fix location math, add logic to find binary on MacOS X.</li>
