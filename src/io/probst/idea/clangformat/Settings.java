@@ -15,21 +15,21 @@ public class Settings {
   }
 
   static Settings update(String clangFormatBinary, String path) {
-    if (clangFormatBinary == null || clangFormatBinary.trim().isEmpty()) {
+    if ("".equals(clangFormatBinary)) {
       clangFormatBinary = "clang-format";
     }
-    if (path == null) {
-      path = "";
+    if ("".equals(path)) {
+      path = null;
     }
     PropertiesComponent props = PropertiesComponent.getInstance();
-    props.setValue(CF_BINARY_PROP, clangFormatBinary);
-    props.setValue(CF_PATH_PROP, path);
+    props.setValue(CF_BINARY_PROP, clangFormatBinary, "clang-format");
+    props.setValue(CF_PATH_PROP, path, null);
     return get();
   }
 
   private Settings() {
     PropertiesComponent props = PropertiesComponent.getInstance();
     clangFormatBinary = props.getValue(CF_BINARY_PROP, "clang-format");
-    path = props.getValue(CF_PATH_PROP, "");
+    path = props.getValue(CF_PATH_PROP);
   }
 }

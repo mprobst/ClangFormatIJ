@@ -1,5 +1,6 @@
 package io.probst.idea.clangformat;
 
+import com.google.common.base.Splitter;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
@@ -18,6 +19,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlValue;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -38,8 +40,8 @@ import java.util.concurrent.TimeoutException;
  * updates to the editor.
  */
 public class ClangFormatAction extends AnAction {
-
   static final ExecutorService EXECUTOR = ForkJoinPool.commonPool();
+  public static final boolean IS_MAC_OS = System.getProperty("os.name").contains("Mac OS X");
 
   @Override
   public void update(AnActionEvent e) {
@@ -52,7 +54,8 @@ public class ClangFormatAction extends AnAction {
   public void actionPerformed(AnActionEvent actionEvent) {
     Project project = actionEvent.getData(CommonDataKeys.PROJECT);
     Editor editor = actionEvent.getData(CommonDataKeys.EDITOR);
-    if (editor == null) return;  // can happen during startup.
+    if (editor == null)
+      return; // can happen during startup.
 
     Document document = editor.getDocument();
     Caret caret = editor.getCaretModel().getPrimaryCaret();
@@ -63,8 +66,8 @@ public class ClangFormatAction extends AnAction {
     int docLength = document.getTextLength() - 1;
     int cursor = Math.min(caret.getOffset(), docLength);
     int selectionStart = Math.min(editor.getSelectionModel().getSelectionStart(), docLength);
-    int selectionLength = Math.min(editor.getSelectionModel().getSelectionEnd(), docLength)
-        - selectionStart;
+    int selectionLength =
+        Math.min(editor.getSelectionModel().getSelectionEnd(), docLength) - selectionStart;
 
     ProcessBuilder builder = null;
     Process formatter;
@@ -79,17 +82,21 @@ public class ClangFormatAction extends AnAction {
       formatter = builder.start();
     } catch (IOException | InterruptedException | ExecutionException e) {
       e.printStackTrace();
-      showError(project, "running " + (builder == null ? "clang-format" : builder.command()) +
-          " failed - not installed?<br/>"
-          + "Try running 'clang-format' in a shell, or configure its location in the preferences."
-          + "<br/>" + e.getMessage());
+      String command = "";
+      if (builder != null) {
+        command = "command: " + builder.command() + " in PATH=" + builder.environment().get("PATH");
+      }
+      showError(project, "running clang-format failed - not installed?<br/>"
+              + "Try running 'clang-format' in a shell, or configure its location in the preferences."
+              + "<br/>" + e.getMessage() + "<br/>" + command);
       return;
     }
 
     final OutputStream outputStream = formatter.getOutputStream();
     Future<?> outWritten = EXECUTOR.submit(() -> writeFileContents(document, outputStream));
     final InputStream inputStream = formatter.getInputStream();
-    Future<Replacements> replacementsFuture = EXECUTOR.submit(() -> Replacements.parse(inputStream));
+    Future<Replacements> replacementsFuture =
+        EXECUTOR.submit(() -> Replacements.parse(inputStream));
     final InputStream errorStream = formatter.getErrorStream();
     Future<String> errorMessage = EXECUTOR.submit(() -> readInput(errorStream));
 
@@ -107,8 +114,8 @@ public class ClangFormatAction extends AnAction {
           return;
         }
         if (formatter.exitValue() != 0) {
-          showError(project, "clang-format failed with exit code " + formatter.exitValue() +
-              ", error: " + errorMessage.get());
+          showError(project, "clang-format failed with exit code " + formatter.exitValue()
+                  + ", error: " + errorMessage.get());
           return;
         }
         final Replacements replacements = replacementsFuture.get();
@@ -143,34 +150,42 @@ public class ClangFormatAction extends AnAction {
       PATH_FUTURE = EXECUTOR.submit(new Callable<String>() {
         @Override
         public String call() throws Exception {
-          return readInput(new ProcessBuilder()
-              .command("bash", "-l", "-r", "-c", "echo $PATH")
-              .redirectErrorStream(true)
-              .start()
-              .getInputStream());
+          InputStream input = new ProcessBuilder()
+                                  .command("bash", "-l", "-r", "-c", "echo $PATH")
+                                  .redirectErrorStream(true)
+                                  .start()
+                                  .getInputStream();
+          return readInput(input);
         }
       });
     }
     return PATH_FUTURE;
   }
 
-  private ProcessBuilder getCommand(String filePath, int cursor, int selectionStart, int
-      selectionLength) throws ExecutionException, InterruptedException {
+  private ProcessBuilder getCommand(String filePath, int cursor, int selectionStart,
+      int selectionLength) throws ExecutionException, InterruptedException {
     Settings settings = Settings.get();
 
-    ProcessBuilder command = new ProcessBuilder()
-        .command(
-            settings.clangFormatBinary,
-            "-output-replacements-xml",
-            "-assume-filename=" + filePath,
-            "-cursor=" + cursor,
-            "-offset=" + selectionStart,
-            "-length=" + selectionLength);
+    ProcessBuilder command = new ProcessBuilder().command(settings.clangFormatBinary,
+        "-output-replacements-xml", "-assume-filename=" + filePath, "-cursor=" + cursor,
+        "-offset=" + selectionStart, "-length=" + selectionLength);
 
-    if (!settings.path.trim().isEmpty()) {
+    if (settings.path != null) {
       command.environment().put("PATH", settings.path);
-    } else if (System.getProperty("os.name").contains("Mac OS X")) {
-      command.environment().put("PATH", getLoginShellPath().get());
+    } else if (IS_MAC_OS) {
+      String path = getLoginShellPath().get();
+      command.environment().put("PATH", path);
+    }
+    if (IS_MAC_OS && "clang-format".equals(settings.clangFormatBinary)) {
+      List<String> pathEntries =
+          Splitter.on(File.pathSeparatorChar).splitToList(command.environment().get("PATH"));
+      for (String p : pathEntries) {
+        File candidate = new File(p, "clang-format");
+        if (candidate.canExecute()) {
+          command.command().set(0, candidate.getPath());
+          break;
+        }
+      }
     }
     return command;
   }
@@ -223,18 +238,13 @@ public class ClangFormatAction extends AnAction {
       }
     }
 
-    @XmlElement
-    int cursor;
-    @XmlElement(name = "replacement")
-    List<Replacement> replacements;
+    @XmlElement int cursor;
+    @XmlElement(name = "replacement") List<Replacement> replacements;
   }
 
   static class Replacement {
-    @XmlAttribute
-    int offset;
-    @XmlAttribute
-    int length;
-    @XmlValue
-    String value;
+    @XmlAttribute int offset;
+    @XmlAttribute int length;
+    @XmlValue String value;
   }
 }
