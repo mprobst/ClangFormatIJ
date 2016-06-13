@@ -66,6 +66,7 @@ public class ClangFormatAction extends AnAction {
     int selectionLength = Math.min(editor.getSelectionModel().getSelectionEnd(), docLength)
         - selectionStart;
 
+    ProcessBuilder builder = null;
     Process formatter;
     try {
       // Comment in to debug mystifying missing binaries etc.
@@ -74,13 +75,14 @@ public class ClangFormatAction extends AnAction {
       //          .redirectErrorStream(true)
       //          .start()
       //          .getInputStream()));
-      formatter = getCommand(filePath, cursor, selectionStart, selectionLength).start();
-    } catch (IOException|InterruptedException|ExecutionException e) {
+      builder = getCommand(filePath, cursor, selectionStart, selectionLength);
+      formatter = builder.start();
+    } catch (IOException | InterruptedException | ExecutionException e) {
       e.printStackTrace();
-      showError(project, "running clang-format failed - not installed?<br/>"
-          + "Try running 'clang-format' in a shell.<br/>" + e.getMessage() + "<br>"
-          + "<br>On Mac OS X, make sure to set your PATH variables in .profile, "
-          + "not in e.g. .bash_profile.");
+      showError(project, "running " + (builder == null ? "clang-format" : builder.command()) +
+          " failed - not installed?<br/>"
+          + "Try running 'clang-format' in a shell, or configure its location in the preferences."
+          + "<br/>" + e.getMessage());
       return;
     }
 
