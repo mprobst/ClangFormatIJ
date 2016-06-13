@@ -1,7 +1,5 @@
 package io.probst.idea.clangformat;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
@@ -20,25 +18,19 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlValue;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Stream;
 
 /**
  * Runs clang-format on the current statement or selection (if any), and applies the formatting
@@ -73,12 +65,18 @@ public class ClangFormatAction extends AnAction {
     int selectionLength = Math.min(editor.getSelectionModel().getSelectionEnd(), docLength)
         - selectionStart;
 
-    String clangFormatBinary = findClangFormat();
     Process formatter;
     try {
+      // Comment in to debug mystifyingly missing binaries etc.
+      //      System.out.println("PATH is " + readInput(new ProcessBuilder()
+      //          .command("sh", "-c", "echo $PATH")
+      //          .redirectErrorStream(true)
+      //          .start()
+      //          .getInputStream()));
+
       formatter = new ProcessBuilder()
           .command(
-              clangFormatBinary,
+              "clang-format",
               "-output-replacements-xml",
               "-assume-filename=" + filePath,
               "-cursor=" + cursor,
@@ -86,8 +84,10 @@ public class ClangFormatAction extends AnAction {
               "-length=" + selectionLength)
           .start();
     } catch (IOException e) {
-      showError(project, "running " + clangFormatBinary + " failed - not installed?<br/>" +
-          "Try running 'clang-format' in a shell.<br/>" + e.getMessage());
+      showError(project, "running clang-format failed - not installed?<br/>"
+              + "Try running 'clang-format' in a shell.<br/>" + e.getMessage() + "<br>"
+              + "<br>On Mac OS X, make sure to set your PATH variables in .profile, "
+              + "not in e.g. .bash_profile.");
       return;
     }
 
@@ -134,30 +134,6 @@ public class ClangFormatAction extends AnAction {
         showError(project, e.getCause().getMessage());
       }
     });
-  }
-
-  private String findClangFormat() {
-    // MacOS X does not set PATH for applications started from the finder, like IntelliJ.
-    // Search clang-format in the PATH, and a couple of other well known locations.
-    FileSystem fs = FileSystems.getDefault();
-    Stream<Path> paths = Splitter.on(File.pathSeparatorChar).splitToList(System.getenv("PATH"))
-        .stream()
-        .map((p) -> fs.getPath(p));
-
-    Path home = fs.getPath(System.getenv("HOME"));
-    Stream<Path> extraLocations = ImmutableList.of(
-        fs.getPath("/usr/local/bin"),
-        home.resolve("bin"),
-        home.resolve(".homebrew").resolve("bin"))
-        .stream();
-
-    Optional<String> binary = Stream.concat(paths, extraLocations)
-        .flatMap(path -> Stream.of(path.resolve("clang-format"), path.resolve("clang-format.exe")))
-        .filter((p) -> p.toFile().exists())
-        .map(p -> p.toString())
-        .findFirst();
-
-    return binary.orElse("clang-format"); // let's hope?
   }
 
   private void writeFileContents(Document document, OutputStream outputStream) {

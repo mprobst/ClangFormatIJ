@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>io.probst.idea.clangformat</id>
   <name>ClangFormatIJ</name>
-  <version>1.0.3</version>
+  <version>1.0.4</version>
   <vendor email="martin@probst.io" url="http://www.probst.io">Martin Probst</vendor>
 
   <description><![CDATA[
@@ -11,11 +11,15 @@
     <p>This plugin does not contain <code>clang-format</code> itself, you must install it separately.
       <code>clang-format</code> is available in e.g. npm, or homebrew for Mac. This plugin also
       has no configuration, please use the regular <code>.clang-format</code> mechanism.</p>
+    <p>If you are using Mac OS X and have trouble getting it to run, please make sure to set your
+      PATH environment in $HOME/.profile. Mac OS X seems to ignore $HOME/.bash_profile for
+      applications launched from the Finder.</p>
     ]]>
   </description>
 
   <change-notes><![CDATA[
     <ul>
+      <li><b>1.0.4</b> - Drop crazy PATH logic, recommend $HOME/.profile to users.</li>
       <li><b>1.0.3</b> - Fix location math, add logic to find binary on MacOS X.</li>
       <li><b>1.0.2</b> - Use the full file path, so that clang-format picks up the correct
         configuration file.</li>
