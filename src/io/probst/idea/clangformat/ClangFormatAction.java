@@ -47,7 +47,7 @@ public class ClangFormatAction extends AnAction {
   public void update(AnActionEvent e) {
     Project project = e.getData(CommonDataKeys.PROJECT);
     Editor editor = e.getData(CommonDataKeys.EDITOR);
-    e.getPresentation().setVisible((project != null && editor != null));
+    e.getPresentation().setVisible(project != null && editor != null);
   }
 
   @Override

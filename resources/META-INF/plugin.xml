@@ -41,9 +41,9 @@
             description="Runs clang-format on this buffer">
       <add-to-group group-id="EditorPopupMenu" anchor="last"/>
 
-      <keyboard-shortcut keymap="Mac OS X" first-keystroke="control K"/>
-      <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta K"/>
-      <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta K"/>
+      <keyboard-shortcut keymap="Mac OS X" first-keystroke="control alt K"/>
+      <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta alt K"/>
+      <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta alt K"/>
     </action>
   </actions>
 
