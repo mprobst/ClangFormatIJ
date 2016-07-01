@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>io.probst.idea.clangformat</id>
   <name>ClangFormatIJ</name>
-  <version>1.0.7</version>
+  <version>1.0.8</version>
   <vendor email="martin@probst.io" url="http://www.probst.io">Martin Probst</vendor>
 
   <description><![CDATA[
@@ -19,6 +19,7 @@
 
   <change-notes><![CDATA[
     <ul>
+      <li><b>1.0.8</b> - Pass -style=file to clang-format.</li>
       <li><b>1.0.7</b> - Change the default keybinding to Ctrl/Cmd-Alt-K, which doesn't conflict
         with known existing bindings.</li>
       <li><b>1.0.6</b> - Search the PATH for the binary.</li>

@@ -166,7 +166,7 @@ public class ClangFormatAction extends AnAction {
       int selectionLength) throws ExecutionException, InterruptedException {
     Settings settings = Settings.get();
 
-    ProcessBuilder command = new ProcessBuilder().command(settings.clangFormatBinary,
+    ProcessBuilder command = new ProcessBuilder().command(settings.clangFormatBinary, "-style=file",
         "-output-replacements-xml", "-assume-filename=" + filePath, "-cursor=" + cursor,
         "-offset=" + selectionStart, "-length=" + selectionLength);
 
