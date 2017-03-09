@@ -19,7 +19,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li><b>1.0.9</b> - Fixed bugs in formatting in AppCode
+      <li><b>1.0.9</b> - Fixed bugs with formatting in AppCode
       <li><b>1.0.8</b> - Pass -style=file to clang-format.</li>
       <li><b>1.0.7</b> - Change the default keybinding to Ctrl/Cmd-Alt-K, which doesn't conflict
         with known existing bindings.</li>
@@ -43,9 +43,10 @@
     <group id="ClangFormat.Group" text="ClangFormat" popup="true">
       <action id="clangFormat" class="io.probst.idea.clangformat.ClangFormatAction" text="_Format this file"
               description="Format this file">
-        <keyboard-shortcut keymap="$default" first-keystroke="meta shift S"/>
-        <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta shift S"/>
-        <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta shift S"/>
+        <keyboard-shortcut keymap="Mac OS X" first-keystroke="control alt K"/>
+        <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta alt K"/>
+        <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta alt K"/>
+
       </action>
       <add-to-group group-id="CodeMenu"/>
     </group>
