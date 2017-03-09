@@ -1,6 +1,9 @@
 package io.probst.idea.clangformat;
 
 import com.google.common.base.Splitter;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSerializer;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
@@ -27,6 +30,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -65,19 +69,12 @@ public class ClangFormatAction extends AnAction {
     // clang-format.
     int docLength = document.getTextLength() - 1;
     int cursor = Math.min(caret.getOffset(), docLength);
-    int selectionStart = Math.min(editor.getSelectionModel().getSelectionStart(), docLength);
-    int selectionLength =
-        Math.min(editor.getSelectionModel().getSelectionEnd(), docLength) - selectionStart;
+    int selectionStart = 0;
+    int selectionLength = docLength;
 
     ProcessBuilder builder = null;
     Process formatter;
     try {
-      // Comment in to debug mystifying missing binaries etc.
-      //      System.out.println("PATH is " + readInput(new ProcessBuilder()
-      //          .command("sh", "-c", "echo $PATH")
-      //          .redirectErrorStream(true)
-      //          .start()
-      //          .getInputStream()));
       builder = getCommand(filePath, cursor, selectionStart, selectionLength);
       formatter = builder.start();
     } catch (IOException | InterruptedException | ExecutionException e) {
@@ -95,11 +92,8 @@ public class ClangFormatAction extends AnAction {
     final OutputStream outputStream = formatter.getOutputStream();
     Future<?> outWritten = EXECUTOR.submit(() -> writeFileContents(document, outputStream));
     final InputStream inputStream = formatter.getInputStream();
-    Future<Replacements> replacementsFuture =
-        EXECUTOR.submit(() -> Replacements.parse(inputStream));
     final InputStream errorStream = formatter.getErrorStream();
     Future<String> errorMessage = EXECUTOR.submit(() -> readInput(errorStream));
-
     EXECUTOR.submit(() -> {
       try {
         try {
@@ -118,17 +112,15 @@ public class ClangFormatAction extends AnAction {
                   + ", error: " + errorMessage.get());
           return;
         }
-        final Replacements replacements = replacementsFuture.get();
+        Scanner s = new Scanner(inputStream).useDelimiter("\\A");
+        String clangResult = s.hasNext() ? s.next() : "";
         WriteCommandAction.runWriteCommandAction(project, () -> {
-          // Track the actual location being moved by the insertions/removals.
-          int offsetCorrection = 0;
-          for (Replacement r : replacements.replacements) {
-            int actualStart = r.offset + offsetCorrection;
-            int actualEnd = actualStart + r.length;
-            document.replaceString(actualStart, actualEnd, r.value);
-            offsetCorrection -= r.length - r.value.length();
-          }
-          caret.moveToOffset(replacements.cursor);
+          String[] results = clangResult.split("\n", 2);
+          JsonElement root = new JsonParser().parse(results[0]);
+          int newCursorOffset = root.getAsJsonObject().get("Cursor").getAsInt();
+          CharSequence formattedCode = results[1];
+          document.replaceString(0, docLength, formattedCode);
+          caret.moveToOffset(newCursorOffset);
         });
       } catch (InterruptedException e) {
         showError(project, e.getMessage());
@@ -136,6 +128,7 @@ public class ClangFormatAction extends AnAction {
         showError(project, e.getCause().getMessage());
       }
     });
+
   }
 
   static Future<String> PATH_FUTURE = null;
@@ -165,10 +158,7 @@ public class ClangFormatAction extends AnAction {
   private ProcessBuilder getCommand(String filePath, int cursor, int selectionStart,
       int selectionLength) throws ExecutionException, InterruptedException {
     Settings settings = Settings.get();
-
-    ProcessBuilder command = new ProcessBuilder().command(settings.clangFormatBinary, "-style=file",
-        "-output-replacements-xml", "-assume-filename=" + filePath, "-cursor=" + cursor,
-        "-offset=" + selectionStart, "-length=" + selectionLength);
+    ProcessBuilder command = new ProcessBuilder().command(settings.clangFormatBinary, "-style=file", "-cursor=" + cursor);
 
     if (settings.path != null) {
       command.environment().put("PATH", settings.path);
@@ -215,36 +205,5 @@ public class ClangFormatAction extends AnAction {
     Notification notification =
         new Notification("ClangFormatIJ", "Formatting Failed", errorMsg, NotificationType.ERROR);
     Notifications.Bus.notify(notification, project);
-  }
-
-  @XmlRootElement
-  static class Replacements {
-    static final JAXBContext REPLACEMENTS_CTX;
-
-    static {
-      try {
-        REPLACEMENTS_CTX = JAXBContext.newInstance(Replacements.class);
-      } catch (JAXBException e) {
-        throw new RuntimeException("Failed to load JAXB context", e);
-      }
-    }
-
-    static Replacements parse(InputStream inputStream) {
-      try {
-        // JAXB closes the InputStream.
-        return (Replacements) REPLACEMENTS_CTX.createUnmarshaller().unmarshal(inputStream);
-      } catch (JAXBException e) {
-        throw new RuntimeException("Failed to parse clang-format XML replacements", e);
-      }
-    }
-
-    @XmlElement int cursor;
-    @XmlElement(name = "replacement") List<Replacement> replacements;
-  }
-
-  static class Replacement {
-    @XmlAttribute int offset;
-    @XmlAttribute int length;
-    @XmlValue String value;
   }
 }
