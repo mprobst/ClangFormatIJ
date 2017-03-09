@@ -7,5 +7,8 @@ IDEA, WebStorm, or similar.
 
 It's easiest to install ClangFormatIJ from the plugin marketplace.
 
-You will also need `clang-format` itself. Install it from npm (`npm install
+You will also *need* `clang-format` itself. Install it from npm (`npm install
 clang-format`), or using homebrew (`brew install clang-format`).
+
+## Screenshots
+![Clang-screenshot](https://yadi.sk/i/0VIF8EWQ3FPbiJ?raw=true "Screenshot")
