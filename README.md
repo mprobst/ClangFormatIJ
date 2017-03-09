@@ -5,6 +5,11 @@ IDEA, WebStorm, or similar.
 
 ## Installation
 
+Download plugin from https://github.com/CheslavBochko/ClangFormatIJ/blob/master/Plugin/ClangFormatIJ.jar
+
+Install plugin from disk >>
+https://www.jetbrains.com/help/idea/2016.3/installing-plugin-from-disk.html
+
 It's easiest to install ClangFormatIJ from the plugin marketplace.
 
 You will also *need* `clang-format` itself. Install it from npm (`npm install
