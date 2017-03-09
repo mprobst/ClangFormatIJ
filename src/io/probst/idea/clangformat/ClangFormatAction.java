@@ -158,7 +158,7 @@ public class ClangFormatAction extends AnAction {
   private ProcessBuilder getCommand(String filePath, int cursor, int selectionStart,
       int selectionLength) throws ExecutionException, InterruptedException {
     Settings settings = Settings.get();
-    ProcessBuilder command = new ProcessBuilder().command(settings.clangFormatBinary, "-style=file", "-cursor=" + cursor);
+    ProcessBuilder command = new ProcessBuilder().command(settings.clangFormatBinary,filePath, "-style=file", "-cursor=" + cursor);
 
     if (settings.path != null) {
       command.environment().put("PATH", settings.path);
