@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>io.probst.idea.clangformat</id>
   <name>ClangFormatIJ</name>
-  <version>1.0.8</version>
+  <version>1.0.9</version>
   <vendor email="martin@probst.io" url="http://www.probst.io">Martin Probst</vendor>
 
   <description><![CDATA[
@@ -19,6 +19,7 @@
 
   <change-notes><![CDATA[
     <ul>
+      <li><b>1.0.9</b> - Fixed bugs with formatting in AppCode
       <li><b>1.0.8</b> - Pass -style=file to clang-format.</li>
       <li><b>1.0.7</b> - Change the default keybinding to Ctrl/Cmd-Alt-K, which doesn't conflict
         with known existing bindings.</li>
@@ -39,15 +40,17 @@
   <depends>com.intellij.modules.lang</depends>
 
   <actions>
-    <action id="ClangFormat.ClangFormat" class="io.probst.idea.clangformat.ClangFormatAction"
-            text="clang-format"
-            description="Runs clang-format on this buffer">
-      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+    <group id="ClangFormat.Group" text="ClangFormat" popup="true">
+      <action id="clangFormat" class="io.probst.idea.clangformat.ClangFormatAction" text="_Format this file"
+              description="Format this file">
+        <keyboard-shortcut keymap="Mac OS X" first-keystroke="control alt K"/>
+        <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta alt K"/>
+        <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta alt K"/>
 
-      <keyboard-shortcut keymap="Mac OS X" first-keystroke="control alt K"/>
-      <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta alt K"/>
-      <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta alt K"/>
-    </action>
+      </action>
+      <add-to-group group-id="CodeMenu"/>
+    </group>
+
   </actions>
 
   <extensions defaultExtensionNs="com.intellij">
