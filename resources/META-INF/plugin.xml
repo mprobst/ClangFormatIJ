@@ -40,7 +40,7 @@
 
   <actions>
     <action id="ClangFormat.ClangFormat" class="io.probst.idea.clangformat.ClangFormatAction"
-            text="clang-format selection"
+            text="Reformat Current Statement with clang-format"
             description="Runs clang-format on the current statement or selection">
       <add-to-group group-id="EditorPopupMenu" anchor="last"/>
 
@@ -49,12 +49,13 @@
       <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta alt K"/>
     </action>
     <action id="ClangFormat.ClangFormatFile" class="io.probst.idea.clangformat.ClangFormatFileAction"
-            text="clang-format file"
+            text="Reformat File with clang-format"
             description="Runs clang-format on the current file">
     </action>
     <action id="ClangFormat.ClangFormatAuto" class="io.probst.idea.clangformat.ClangFormatAutoAction"
-            text="clang-format file or selection"
+            text="Reformat Code with clang-format"
             description="Runs clang-format on the current file or selection">
+      <add-to-group group-id="CodeFormatGroup" anchor="after" relative-to-action="ReformatCode"/>
     </action>
   </actions>
 
