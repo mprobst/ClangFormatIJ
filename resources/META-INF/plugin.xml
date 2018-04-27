@@ -48,6 +48,10 @@
       <keyboard-shortcut keymap="Mac OS X" first-keystroke="meta alt K"/>
       <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="meta alt K"/>
     </action>
+    <action id="ClangFormat.ClangFormatFile" class="io.probst.idea.clangformat.ClangFormatFileAction"
+            text="clang-format file"
+            description="Runs clang-format on current file">
+    </action>
   </actions>
 
   <extensions defaultExtensionNs="com.intellij">

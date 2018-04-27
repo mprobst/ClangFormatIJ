@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -166,9 +167,8 @@ public class ClangFormatAction extends AnAction {
       int selectionLength) throws ExecutionException, InterruptedException {
     Settings settings = Settings.get();
 
-    ProcessBuilder command = new ProcessBuilder().command(settings.clangFormatBinary, "-style=file",
-        "-output-replacements-xml", "-assume-filename=" + filePath, "-cursor=" + cursor,
-        "-offset=" + selectionStart, "-length=" + selectionLength);
+    ProcessBuilder command = new ProcessBuilder().command(
+            getCommandArguments(settings.clangFormatBinary, filePath, cursor, selectionStart, selectionLength));
 
     if (settings.path != null) {
       command.environment().put("PATH", settings.path);
@@ -188,6 +188,17 @@ public class ClangFormatAction extends AnAction {
       }
     }
     return command;
+  }
+
+  /**
+   * Builds a list of arguments to clang-format
+   */
+  protected List<String> getCommandArguments(String clangFormatBinary, String filePath, int cursor, int selectionStart,
+                                             int selectionLength) {
+    return Arrays.asList(clangFormatBinary, "-style=file",
+            "-output-replacements-xml", "-assume-filename=" + filePath, "-cursor=" + cursor,
+            "-offset=" + selectionStart, "-length=" + selectionLength);
+
   }
 
   private void writeFileContents(Document document, OutputStream outputStream) {
