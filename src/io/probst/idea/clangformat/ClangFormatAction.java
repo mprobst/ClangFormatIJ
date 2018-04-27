@@ -11,6 +11,7 @@ import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.editor.Caret;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 
 import javax.xml.bind.JAXBContext;
@@ -39,7 +40,7 @@ import java.util.concurrent.TimeoutException;
  * Runs clang-format on the current statement or selection (if any), and applies the formatting
  * updates to the editor.
  */
-public class ClangFormatAction extends AnAction {
+public class ClangFormatAction extends AnAction implements DumbAware {
   static final ExecutorService EXECUTOR = ForkJoinPool.commonPool();
   public static final boolean IS_MAC_OS = System.getProperty("os.name").contains("Mac OS X");
 
