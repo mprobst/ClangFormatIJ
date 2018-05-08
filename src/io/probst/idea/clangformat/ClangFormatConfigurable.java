@@ -5,7 +5,10 @@ import com.intellij.openapi.options.ConfigurationException;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 import java.util.Objects;
 
 /**
@@ -17,6 +20,7 @@ public class ClangFormatConfigurable implements Configurable {
   private JTextField clangFormatBinary;
   private JTextField path;
   private JPanel configurationForm;
+  private JCheckBox formatOnlyChangedTextCheckBox;
 
   @Nls
   @Override
@@ -40,18 +44,20 @@ public class ClangFormatConfigurable implements Configurable {
   @Override
   public boolean isModified() {
     return !Objects.equals(settings.clangFormatBinary, clangFormatBinary.getText())
-        || !Objects.equals(settings.path, path.getText());
+        || !Objects.equals(settings.path, path.getText())
+        || !Objects.equals(settings.updateOnlyChangedText, formatOnlyChangedTextCheckBox.isSelected());
   }
 
   @Override
   public void apply() throws ConfigurationException {
-    settings = Settings.update(clangFormatBinary.getText(), path.getText());
+    settings = Settings.update(clangFormatBinary.getText(), path.getText(), formatOnlyChangedTextCheckBox.isSelected());
   }
 
   @Override
   public void reset() {
     clangFormatBinary.setText(settings.clangFormatBinary);
     path.setText(settings.path);
+    formatOnlyChangedTextCheckBox.setSelected(settings.updateOnlyChangedText);
   }
 
   @Override

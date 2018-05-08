@@ -13,6 +13,8 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.TextRange;
+import com.intellij.openapi.vfs.VirtualFile;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -27,7 +29,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -52,6 +57,25 @@ public class ClangFormatAction extends AnAction implements DumbAware {
     e.getPresentation().setVisible(project != null && editor != null);
   }
 
+  /**
+   * Get the ranges for formatting.
+   *
+   * This can be overridden by a subclass for determining custom ranges to format.
+   *
+   * @param document The document to check.
+   * @param editor The Editor which has opened this document
+   * @param virtualFile The file which should be formatted
+   * @return A collection of TextRanges which should be formatted by clang-format
+   */
+  protected Collection<TextRange> getFormatRanges(Project project, Document document, Editor editor, VirtualFile virtualFile) {
+      // IntelliJ reports a cursor at the end of the file as being at file length + 1, which breaks
+      // clang-format.
+      int docLength = document.getTextLength() - 1;
+      int selectionStart = Math.min(editor.getSelectionModel().getSelectionStart(), docLength);
+      int selectionLength = Math.min(editor.getSelectionModel().getSelectionEnd(), docLength) - selectionStart;
+      return Collections.singletonList(new TextRange(selectionStart, selectionStart + selectionLength));
+  }
+
   @Override
   public void actionPerformed(AnActionEvent actionEvent) {
     Project project = actionEvent.getData(CommonDataKeys.PROJECT);
@@ -62,15 +86,20 @@ public class ClangFormatAction extends AnAction implements DumbAware {
     Document document = editor.getDocument();
     Caret caret = editor.getCaretModel().getPrimaryCaret();
 
-    String filePath = actionEvent.getData(CommonDataKeys.VIRTUAL_FILE).getPath();
+    VirtualFile virtFile = actionEvent.getData(CommonDataKeys.VIRTUAL_FILE);
+
+    Collection<TextRange> ranges = getFormatRanges(project, document, editor, virtFile);
+
+    if (ranges.isEmpty()) {
+      // Can happen if there are no VCS changes
+      return;
+    }
+
     // IntelliJ reports a cursor at the end of the file as being at file length + 1, which breaks
     // clang-format.
     int docLength = document.getTextLength() - 1;
     int cursor = Math.min(caret.getOffset(), docLength);
-    int selectionStart = Math.min(editor.getSelectionModel().getSelectionStart(), docLength);
-    int selectionLength =
-        Math.min(editor.getSelectionModel().getSelectionEnd(), docLength) - selectionStart;
-
+    String filePath = virtFile.getPath();
     ProcessBuilder builder = null;
     Process formatter;
     try {
@@ -80,7 +109,7 @@ public class ClangFormatAction extends AnAction implements DumbAware {
       //          .redirectErrorStream(true)
       //          .start()
       //          .getInputStream()));
-      builder = getCommand(filePath, cursor, selectionStart, selectionLength);
+      builder = getCommand(filePath, cursor, ranges);
       formatter = builder.start();
     } catch (IOException | InterruptedException | ExecutionException e) {
       e.printStackTrace();
@@ -164,12 +193,12 @@ public class ClangFormatAction extends AnAction implements DumbAware {
     return PATH_FUTURE;
   }
 
-  private ProcessBuilder getCommand(String filePath, int cursor, int selectionStart,
-      int selectionLength) throws ExecutionException, InterruptedException {
+    private ProcessBuilder getCommand(String filePath, int cursor,
+                                      Collection<TextRange> ranges) throws ExecutionException, InterruptedException {
     Settings settings = Settings.get();
 
     ProcessBuilder command = new ProcessBuilder().command(
-            getCommandArguments(settings.clangFormatBinary, filePath, cursor, selectionStart, selectionLength));
+            getCommandArguments(settings.clangFormatBinary, filePath, cursor, ranges));
 
     if (settings.path != null) {
       command.environment().put("PATH", settings.path);
@@ -194,12 +223,20 @@ public class ClangFormatAction extends AnAction implements DumbAware {
   /**
    * Builds a list of arguments to clang-format
    */
-  protected List<String> getCommandArguments(String clangFormatBinary, String filePath, int cursor, int selectionStart,
-                                             int selectionLength) {
-    return Arrays.asList(clangFormatBinary, "-style=file",
-            "-output-replacements-xml", "-assume-filename=" + filePath, "-cursor=" + cursor,
-            "-offset=" + selectionStart, "-length=" + selectionLength);
+  private List<String> getCommandArguments(String clangFormatBinary,
+                                           String filePath,
+                                           int cursor,
+                                           Collection<TextRange> ranges) {
+      List<String> args = new ArrayList<>(Arrays.asList(clangFormatBinary, "-style=file",
+              "-output-replacements-xml", "-assume-filename=" + filePath, "-cursor=" + cursor));
 
+      // Add all the format ranges as individual -offset/-length parameters
+      for (TextRange range : ranges) {
+          args.add("-offset=" + range.getStartOffset());
+          args.add("-length=" + range.getLength());
+      }
+
+      return args;
   }
 
   private void writeFileContents(Document document, OutputStream outputStream) {
